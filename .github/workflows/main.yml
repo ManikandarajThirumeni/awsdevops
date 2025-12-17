@@ -1,29 +1,24 @@
-name: Java AWS DevSecOps Pipeline
+name: Build and Push App to ECR
+
+# TODO: Update the following variables:
+env:
+  AWS_REGION: ap-south-1
+  AWS_IAM_ROLE: arn:aws:iam::972801262528:role/github-actions
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+    - main
 
 jobs:
-  build-scan-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     permissions:
+      id-token: write
       contents: write
-      security-events: write
-      id-token: write   # For AWS OIDC
 
     steps:
-    - name: Debug GitHub context
-      run: |
-        echo "Repository: ${{ github.repository }}"
-        echo "Ref: ${{ github.ref }}"
-        echo "Actor: ${{ github.actor }}"
-    - name: Dump OIDC token claims
-      uses: actions/github-script@v7
-      with:
-        script: |
-          console.log(process.env.ACTIONS_ID_TOKEN_REQUEST_URL)
     - name: Checkout code
       uses: actions/checkout@v5
 
@@ -31,7 +26,26 @@ jobs:
       uses: aws-actions/configure-aws-credentials@v5
       with:
         audience: sts.amazonaws.com
-        aws-region: ap-south-1
-        role-to-assume: arn:aws:iam::972801262528:role/github-actions
-    - name: Get AWS STS
-      run: aws sts get-caller-identity
+        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: ${{ env.AWS_IAM_ROLE }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Release new version
+      id: release
+      run: |
+        bash ./scripts/git_update.sh -v patch
+
+    - name: Add app version (Optional)
+      run: echo ${{ steps.release.outputs.new-tag }} > version.txt
+
+    - name: Build, tag, and push Docker image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ github.repository }}
+        IMAGE_TAG: ${{ steps.release.outputs.new-tag }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
