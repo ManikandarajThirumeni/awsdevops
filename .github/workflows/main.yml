@@ -1,5 +1,21 @@
-- name: Debug GitHub context
-  run: |
-    echo "Repository: ${{ github.repository }}"
-    echo "Ref: ${{ github.ref }}"
-    echo "Actor: ${{ github.actor }}"
+name: Java AWS DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-scan-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      security-events: write
+      id-token: write   # For AWS OIDC
+
+    steps:
+    - name: Debug GitHub context
+      run: |
+        echo "Repository: ${{ github.repository }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "Actor: ${{ github.actor }}"
