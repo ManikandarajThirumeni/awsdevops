@@ -24,3 +24,5 @@ jobs:
       with:
         script: |
           console.log(process.env.ACTIONS_ID_TOKEN_REQUEST_URL)
+    - name: Get AWS STS
+      run: aws sts get-caller-identity
