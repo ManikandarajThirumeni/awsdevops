@@ -24,5 +24,14 @@ jobs:
       with:
         script: |
           console.log(process.env.ACTIONS_ID_TOKEN_REQUEST_URL)
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        audience: sts.amazonaws.com
+        aws-region: ap-south-1
+        role-to-assume: arn:aws:iam::972801262528:role/github-actions
     - name: Get AWS STS
       run: aws sts get-caller-identity
